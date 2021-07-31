@@ -12,10 +12,9 @@ WHITE = (255, 255, 255)
 
 root = Tk()
 
-window_width = 600
-window_height = 400
+window_width = 700
+window_height = 500
 point_thickness = 3
-display_surf = pygame.display.set_mode((window_width, window_height))
 
 show_noise = True
 show_trail = True
@@ -24,11 +23,12 @@ show_trail = True
 
 def main():
     pygame.init()
-    global display_surf
+    global display_surf, display2
     display_surf = pygame.display.set_mode((window_width, window_height))
+    display2 = pygame.display.set_mode((window_width, window_height))
     pygame.display.set_caption('Brownian Motional Visualizer')
     display_surf.fill(BLACK)
-    create_particles()
+    create_particles(num_main_particles, num_other_particles)
 
     while True:
         for event in pygame.event.get():
@@ -36,7 +36,6 @@ def main():
                 pygame.quit()
                 sys.exit()
         display_surf.fill(BLACK)
-        pygame.time.wait(1)
 
         if keyboard.is_pressed('s'):
             global show_noise
@@ -48,18 +47,16 @@ def main():
             pygame.time.delay(100)
             # Iterates through all the particles.
         for particle in all_particles:
-            # particle.collision(all_particles)
-            # Checks if this particle collides with any other particle.
-            # for otherParticle in all_particles:
-            #     if particle != otherParticle:
-            #         particle.collision(otherParticle)
+            temp = len(all_particles)
             particle.move(all_particles)
+            if temp != len(all_particles):
+                print(temp, len(all_particles))
 
         # Resets the demo with new particles.
         if keyboard.is_pressed('r'):
             all_particles.clear()
             display_surf.fill(BLACK)
-            create_particles()
+            create_particles(num_main_particles, num_other_particles)
 
         pygame.display.flip()
 
@@ -79,10 +76,10 @@ class Particle:
         else:
             self.color = (255, 0, 0)
             self.radius = mini_particle_radius
-            self.speed = 2
+            self.speed = 3
         self.direction = random.random()*2*pi
 
-    # Draws the particle.
+    # Draws the particle and trail if applicable
     def display(self):
         pygame.draw.circle(display_surf, self.color,
                            (self.x, self.y), self.radius, 1)
@@ -91,7 +88,23 @@ class Particle:
                 pygame.draw.circle(display_surf, self.color, point, 1, 1)
                 # Checks if this particle collides with any other particle or the wall.
 
+    def move(self, all_particles):
+        self.direction %= (pi*2)
+        change_x = cos(self.direction)*self.speed
+        change_y = -1 * sin(self.direction)*self.speed
+        self.collision(change_x, change_y, all_particles)
+
     def collision(self, x_change, y_change,  all_particles):
+        # checks if the particle collides with the edges or not
+        newX = self.x + x_change
+        newY = self.y + y_change
+        if (newX + self.radius >= window_width) or (newX - self.radius <= 0):
+            self.direction = (pi)-self.direction
+            x_change *= -1
+
+        if newY + self.radius >= window_height or (newY - self.radius <= 0):
+            self.direction *= -1
+            y_change *= -1
         for Particle in all_particles:
             newX = self.x + x_change
             newY = self.y + y_change
@@ -113,12 +126,14 @@ class Particle:
                 newY = self.y + y_change
                 distance = dist((newX, newY), (Particle.x, Particle.y))
                 if distance <= self.radius + Particle.radius:
-                    if distance < self.radius + Particle.radius:
+                    if distance < max(self.radius, Particle.radius):
                         if self.isMainParticle or not Particle.isMainParticle:
-                            del(Particle)
+                            all_particles.remove(Particle)
+                            create_particles(0, 1)
                             break
                         else:
-                            del(self)
+                            all_particles.remove(self)
+                            create_particles(0, 1)
                             return
                     m1 = (pi*self.radius**2)
                     m2 = (pi*Particle.radius**2)
@@ -153,70 +168,22 @@ class Particle:
         if show_noise or self.isMainParticle:
             self.display()
 
-    def move(self, all_particles):
-        self.direction %= (pi*2)
-        change_x = cos(self.direction)*self.speed
-        change_y = -1 * sin(self.direction)*self.speed
-        self.collision(change_x, change_y, all_particles)
 
-        # bounceX = False
-        # bounceY = False
-        # if (change_x + self.x + self.radius >= window_width and (self.direction < pi/2 or self.direction > 3*pi/2))\
-        #         or change_x + self.x - self.radius <= 0 and (self.direction > pi/2 and self.direction < 3*pi/2):
-        #     self.direction = (pi)-self.direction
-        #     bounceX = True
-
-        # if change_y + self.y + self.radius >= window_height and (self.direction > pi and self.direction < 2*pi) \
-        #         or (change_y + self.y - self.radius <= 0 and (self.direction < pi and self.direction > 0)):
-        #     self.direction *= -1
-        #     bounceY = True
-        # self.direction %= (pi*2)
-
-        # if bounceX:
-        #     if bounceY:
-        #         self.collision(-change_x, change_y, all_particles)
-        #     else:
-        #         self.collision(-change_x, -change_y, all_particles)
-        # elif bounceY:
-        #     self.collision(change_x, change_y, all_particles)
-        # else:
-        #     self.collision(change_x, -change_y, all_particles)
-
-        # self.direction %= (pi*2)
-        # change_x = cos(self.direction)*self.speed
-        # change_y = sin(self.direction)*self.speed
-        # bounceX = False
-        # bounceY = False
-        # if (change_x + self.x + self.radius >= window_width and (self.direction < pi/2 or self.direction > 3*pi/2))\
-        #         or change_x + self.x - self.radius <= 0 and (self.direction > pi/2 and self.direction < 3*pi/2):
-        #     self.x -= change_x
-        #     self.direction = (pi)-self.direction
-        #     bounceX = True
-        # else:
-        #     self.x += change_x
-
-        # if change_y + self.y + self.radius >= window_height and (self.direction > pi and self.direction < 2*pi) \
-        #         or (change_y + self.y - self.radius <= 0 and (self.direction < pi and self.direction > 0)):
-        #     self.y += change_y
-        #     self.direction *= -1
-        #     bounceY = True
-        # else:
-        #     self.y -= change_y
-        # self.direction %= (pi*2)
-
-
-# Stores the displayed particles.
+# Stores the particles.
 all_particles = []
-num_main_particles = 0
+
+# Number and radius of the larger particles with the trails
+num_main_particles = 3
 main_particle_radius = 30
 
+# Number and radius of the smaller filler particles
 num_other_particles = 150
-mini_particle_radius = 5
-# Generates the particles with random size, speed, and starting positions and adds them to the list of particles.
+mini_particle_radius = 10
 
 
-def create_particles():
-    for n in range(num_main_particles):
+# Generates the number of main (big) particles and other (smaller) particles at a random (x,y) coordinate such that they dont overlap
+def create_particles(num_main, num_other):
+    for n in range(num_main):
         x = random.randint(main_particle_radius,
                            window_width-main_particle_radius)
         y = random.randint(main_particle_radius,
@@ -228,7 +195,7 @@ def create_particles():
                 y = random.randint(main_particle_radius,
                                    window_height-main_particle_radius)
         all_particles.append(Particle(x, y, True))
-    for n in range(num_other_particles):
+    for n in range(num_other):
         x = random.randint(mini_particle_radius,
                            window_width-mini_particle_radius)
         y = random.randint(mini_particle_radius,
