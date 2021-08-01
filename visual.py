@@ -100,6 +100,8 @@ class Particle:
                 pygame.draw.circle(display_surf, self.color, point, 1, 1)
                 # Checks if this particle collides with any other particle or the wall.
 
+    # Finds the change in x and y that the particle will move and check if it collides
+    # with a particle or the wall
     def move(self, all_particles):
         self.direction %= (pi*2)
         change_x = cos(self.direction)*self.speed
