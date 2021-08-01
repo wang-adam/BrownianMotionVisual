@@ -12,8 +12,8 @@ WHITE = (255, 255, 255)
 
 root = Tk()
 
-window_width = 700
-window_height = 500
+window_width = 720  # 16:9 aspect ratio
+window_height = 405
 point_thickness = 3
 
 # Determines what stuff to display
