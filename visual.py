@@ -16,11 +16,23 @@ window_width = 700
 window_height = 500
 point_thickness = 3
 
+# Determines what stuff to display
 show_noise = True
 show_trail = True
+
+# Stores the particles.
+all_particles = []
+
+# Number and radius of the larger particles with the trails
+num_main_particles = 3
+main_particle_radius = 30
+
+# Number and radius of the smaller filler particles
+num_other_particles = 150
+mini_particle_radius = 10
+
+
 # Main Function
-
-
 def main():
     pygame.init()
     global display_surf, display2
@@ -60,8 +72,8 @@ def main():
 
         pygame.display.flip()
 
-# Particle object class.
 
+# Particle object class
 
 class Particle:
     def __init__(self, x, y, isMainParticle):
@@ -105,6 +117,9 @@ class Particle:
         if newY + self.radius >= window_height or (newY - self.radius <= 0):
             self.direction *= -1
             y_change *= -1
+
+        # For all other particles, check if the next position of this particle will
+        # collide with the other particle or the wall. If so, change direction and continue
         for Particle in all_particles:
             newX = self.x + x_change
             newY = self.y + y_change
@@ -126,6 +141,8 @@ class Particle:
                 newY = self.y + y_change
                 distance = dist((newX, newY), (Particle.x, Particle.y))
                 if distance <= self.radius + Particle.radius:
+
+                    # If they coincide or overlap enough, delete one and recreate it elsewhere
                     if distance < max(self.radius, Particle.radius):
                         if self.isMainParticle or not Particle.isMainParticle:
                             all_particles.remove(Particle)
@@ -135,6 +152,9 @@ class Particle:
                             all_particles.remove(self)
                             create_particles(0, 1)
                             return
+
+                    # Change the direction of this particle and the collided particle using the Elastic
+                    # colission equations https://williamecraver.wixsite.com/elastic-equations
                     m1 = (pi*self.radius**2)
                     m2 = (pi*Particle.radius**2)
                     self_phi = atan2((newY - Particle.y),
@@ -159,26 +179,18 @@ class Particle:
                         particlespeedx ** 2 + particlespeedy**2)
                     Particle.direction = atan2(particlespeedy, particlespeedx)
 
+                    # Find new future corrdinate
                     x_change = cos(self.direction)*self.speed
                     y_change = -1*sin(self.direction)*self.speed
+
         self.x = newX
         self.y = newY
+
+        # Display
         if self.isMainParticle:
             self.past_path.append((self.x, self.y))
         if show_noise or self.isMainParticle:
             self.display()
-
-
-# Stores the particles.
-all_particles = []
-
-# Number and radius of the larger particles with the trails
-num_main_particles = 3
-main_particle_radius = 30
-
-# Number and radius of the smaller filler particles
-num_other_particles = 150
-mini_particle_radius = 10
 
 
 # Generates the number of main (big) particles and other (smaller) particles at a random (x,y) coordinate such that they dont overlap
